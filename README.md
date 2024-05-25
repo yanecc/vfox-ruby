@@ -30,7 +30,9 @@ Some environment variables are served as following:
 | Conda_Forge           | `conda-forge`         | conda-forge channel |
 | GITHUB_URL            | `https://github.com/` | GitHub mirror URL   |
 
-Example:
+Note: `Conda_Forge` has no effect for Windows.
+
+Usage:
 
 ``` shell
 export Conda_Forge=https://prefix.dev/conda-forge

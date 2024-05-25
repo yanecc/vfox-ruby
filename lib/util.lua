@@ -51,7 +51,6 @@ function fetchFromRubyInstaller()
         error("Failed to get information: " .. err .. "\nstatus_code => " .. resp.status_code)
     end
 
-    local firstLoop = true
     for version in resp.body:gmatch('7z">Ruby (%d.%d.%d+)-1 %(x64%)') do
         table.insert(versions, version)
     end
