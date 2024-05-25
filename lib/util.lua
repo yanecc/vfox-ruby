@@ -188,7 +188,7 @@ function mambaInstall(path)
         error("Failed to execute command: " .. command3)
     end
     os.remove(macromamba)
-    local command4 = "rm -rf " .. path .. "/temp " .. path .. "/pkgs"
+    local command4 = "rm -rf " .. path .. "/temp " .. path .. "/pkgs " .. path .. "/etc " .. path .. "/conda-meta"
     local status = os.execute(command4)
     if status ~= 0 then
         error("Failed to execute command: " .. command4)
