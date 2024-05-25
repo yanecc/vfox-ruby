@@ -19,6 +19,65 @@ local condaVersions = {
     "2.3.3",
 }
 
+-- available.lua
+function fetchAvailable(noCache)
+    local result = {}
+    if noCache then
+        clearCache()
+    end
+    if RUNTIME.osType == "windows" then
+        result = fetchFromRubyInstaller()
+    else
+        result = fetchFromCondaForge()
+    end
+
+    return result
+end
+
+function clearCache()
+    os.remove(RUNTIME.pluginDirPath .. "/available.cache")
+end
+
+function fetchFromRubyInstaller()
+    local result = {}
+    local versions = {}
+    local resp, err = http.get({
+        url = "https://rubyinstaller.org/downloads/archives/",
+    })
+    if err ~= nil then
+        error("Failed to request: " .. err)
+    end
+    if resp.status_code ~= 200 then
+        error("Failed to get information: " .. err .. "\nstatus_code => " .. resp.status_code)
+    end
+
+    local firstLoop = true
+    for version in resp.body:gmatch('7z">Ruby (%d.%d.%d+)-1 %(x64%)') do
+        table.insert(versions, version)
+    end
+    sortVersions(versions)
+    for i, v in ipairs(versions) do
+        if i == 1 then
+            table.insert(result, {
+                version = v,
+                note = "latest",
+            })
+        else
+            table.insert(result, {
+                version = v,
+            })
+        end
+    end
+
+    return result
+end
+
+function sortVersions(versions)
+    table.sort(versions, function(a, b)
+        return compareVersion(a, b) == 1
+    end)
+end
+
 function compareVersion(currentVersion, targetVersion)
     local currentVersionArray = strings.split(currentVersion, ".")
     local compareVersionArray = strings.split(targetVersion, ".")
@@ -33,10 +92,22 @@ function compareVersion(currentVersion, targetVersion)
     return 0
 end
 
-function sortVersions(versions)
-    table.sort(versions, function(a, b)
-        return compareVersion(a, b) == 1
-    end)
+function fetchFromCondaForge()
+    local result = {}
+    for i, v in ipairs(condaVersions) do
+        if i == 1 then
+            table.insert(result, {
+                version = v,
+                note = "latest",
+            })
+        else
+            table.insert(result, {
+                version = v,
+            })
+        end
+    end
+
+    return result
 end
 
 -- pre_install.lua
@@ -76,77 +147,6 @@ function getLatestVersionFromRubyInstaller()
     return version
 end
 
--- available.lua
-function fetchAvailable(noCache)
-    local result = {}
-    if noCache then
-        clearCache()
-    end
-    if RUNTIME.osType == "windows" then
-        result = fetchFromRubyInstaller()
-    else
-        result = fetchFromCondaForge()
-    end
-
-    return result
-end
-
-function fetchFromRubyInstaller()
-    local result = {}
-    local versions = {}
-    local resp, err = http.get({
-        url = "https://rubyinstaller.org/downloads/archives/",
-    })
-    if err ~= nil then
-        error("Failed to request: " .. err)
-    end
-    if resp.status_code ~= 200 then
-        error("Failed to get information: " .. err .. "\nstatus_code => " .. resp.status_code)
-    end
-
-    local firstLoop = true
-    for version in resp.body:gmatch('7z">Ruby (%d.%d.%d+)-1 %(x64%)') do
-        table.insert(versions, version)
-    end
-    sortVersions(versions)
-    for i, v in ipairs(versions) do
-        if i == 1 then
-            table.insert(result, {
-                version = v,
-                note = "latest",
-            })
-        else
-            table.insert(result, {
-                version = v,
-            })
-        end
-    end
-
-    return result
-end
-
-function fetchFromCondaForge()
-    local result = {}
-    for i, v in ipairs(condaVersions) do
-        if i == 1 then
-            table.insert(result, {
-                version = v,
-                note = "latest",
-            })
-        else
-            table.insert(result, {
-                version = v,
-            })
-        end
-    end
-
-    return result
-end
-
-function clearCache()
-    os.remove(RUNTIME.pluginDirPath .. "/available.cache")
-end
-
 function generateURL(version, osType, archType)
     local file
     local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
@@ -158,6 +158,52 @@ function generateURL(version, osType, archType)
     end
 
     return file
+end
+
+-- post_install.lua
+function mambaInstall(path)
+    local macromamba = path .. "/macromamba"
+    downloadMacroMamba(macromamba)
+    local command1 = "chmod +x " .. macromamba
+    local status = os.execute(command1)
+    if status ~= 0 then
+        error("Failed to execute command: " .. command1)
+    end
+    local condaForge = os.getenv("Conda_Forge") or "conda-forge"
+    local command2 = macromamba
+        .. " create -yqp "
+        .. path
+        .. "/temp -r "
+        .. path
+        .. " ruby="
+        .. sdkInfo.version
+        .. " -c "
+        .. condaForge
+    local status = os.execute(command2)
+    if status ~= 0 then
+        error("Failed to execute command: " .. command2)
+    end
+    local command3 = "mv " .. path .. "/temp/* " .. path
+    local status = os.execute(command3)
+    if status ~= 0 then
+        error("Failed to execute command: " .. command3)
+    end
+    os.remove(macromamba)
+    local command4 = "rm -rf " .. path .. "/temp " .. path .. "/pkgs"
+    local status = os.execute(command4)
+    if status ~= 0 then
+        error("Failed to execute command: " .. command4)
+    end
+end
+
+function downloadMacroMamba(path)
+    local file = generateMacroMamba(RUNTIME.osType, RUNTIME.archType)
+    local err = http.download_file({
+        url = file,
+    }, path)
+    if err ~= nil then
+        error("Failed to download micromamba: " .. err)
+    end
 end
 
 function generateMacroMamba(osType, archType)
@@ -179,14 +225,4 @@ function generateMacroMamba(osType, archType)
     file = file:format(osType, archType)
 
     return file
-end
-
-function downloadMacroMamba(path)
-    local file = generateMacroMamba(RUNTIME.osType, RUNTIME.archType)
-    local err = http.download_file({
-        url = file,
-    }, path)
-    if err ~= nil then
-        error("Failed to download micromamba: " .. err)
-    end
 end

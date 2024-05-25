@@ -25,7 +25,14 @@ vfox install ruby@latest
 
 Some environment variables are served as following:
 
-| Environment variables | Default value         | Description        |
-| :-------------------- | :-------------------- | :----------------- |
-| GITHUB_URL            | `https://github.com/` | GitHub mirror URL  |
-| Conda_Forge           | `conda-forge`         | conda-forge mirror |
+| Environment variables | Default value         | Description         |
+| :-------------------- | :-------------------- | :------------------ |
+| Conda_Forge           | `conda-forge`         | conda-forge channel |
+| GITHUB_URL            | `https://github.com/` | GitHub mirror URL   |
+
+Example:
+
+``` shell
+export Conda_Forge=https://prefix.dev/conda-forge
+export GITHUB_URL=https://mirror.ghproxy.com/https://github.com/
+```
