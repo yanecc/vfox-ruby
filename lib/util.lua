@@ -173,7 +173,7 @@ function hasValue(table, value)
 end
 
 -- post_install.lua
-function mambaInstall(path)
+function mambaInstall(path, version)
     local macromamba = path .. "/macromamba"
     downloadMacroMamba(macromamba)
     local command1 = "chmod +x " .. macromamba
@@ -189,7 +189,7 @@ function mambaInstall(path)
         .. "/temp -r "
         .. path
         .. " ruby="
-        .. sdkInfo.version
+        .. version
         .. " -c "
         .. condaForge
     local status = os.execute(command2)
@@ -234,7 +234,8 @@ function generateMacroMamba(osType, archType)
         if osType == "linux" then
             archType = "aarch64"
         end
-    elseif archType == "ppc64le" and osType == "linux" then
+    elseif archType == "ppc64" and osType == "linux" then
+        archType = "ppc64le"
     else
         print("Unsupported environment: " .. osType .. "-" .. archType)
         os.exit(1)
