@@ -88,6 +88,7 @@ function compareVersion(currentVersion, targetVersion)
             return -1
         end
     end
+
     return 0
 end
 
@@ -234,8 +235,7 @@ function generateMacroMamba(osType, archType)
         if osType == "linux" then
             archType = "aarch64"
         end
-    elseif archType == "ppc64" and osType == "linux" then
-        archType = "ppc64le"
+    elseif archType == "ppc64le" and osType == "linux" then
     else
         print("Unsupported environment: " .. osType .. "-" .. archType)
         os.exit(1)
