@@ -234,8 +234,10 @@ function generateMacroMamba(osType, archType)
         if osType == "linux" then
             archType = "aarch64"
         end
+    elseif archType == "ppc64" and osType == "linux" then
+        archType = "ppc64le"
     else
-        print("Unsupported architecture: " .. archType)
+        print("Unsupported environment: " .. osType .. "-" .. archType)
         os.exit(1)
     end
     file = githubURL:gsub("/$", "") .. "/mamba-org/micromamba-releases/releases/latest/download/micromamba-%s-%s"
