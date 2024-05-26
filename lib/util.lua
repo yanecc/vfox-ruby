@@ -154,9 +154,22 @@ function generateURL(version, osType, archType)
         file = githubURL:gsub("/$", "")
             .. "/oneclick/rubyinstaller2/releases/download/RubyInstaller-%s-1/rubyinstaller-%s-1-x%s.7z"
         file = file:format(version, version, bit)
+    elseif not hasValue(condaVersions, version) then
+        print("Unsupported version: " .. version)
+        os.exit(1)
     end
 
     return file
+end
+
+function hasValue(table, value)
+    for _, v in ipairs(table) do
+        if v == value then
+            return true
+        end
+    end
+
+    return false
 end
 
 -- post_install.lua
