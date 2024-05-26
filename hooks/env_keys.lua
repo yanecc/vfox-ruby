@@ -4,7 +4,15 @@ function PLUGIN:EnvKeys(ctx)
     return {
         {
             key = "PATH",
-            value = mainPath .. "/bin",
+            value = mainPath .. "/bin"
+        },
+        {
+            key = "PATH",
+            value = mainPath .. "/share/gems/bin"
+        },
+        {
+            key = "GEM_HOME",
+            value = mainPath .. "/share/gems"
         }
     }
 end
