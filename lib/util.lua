@@ -166,7 +166,8 @@ function mambaInstall(path)
     local command1 = "chmod +x " .. macromamba
     local status = os.execute(command1)
     if status ~= 0 then
-        error("Failed to execute command: " .. command1)
+        print("Failed to execute command: " .. command1)
+        os.exit(1)
     end
     local condaForge = os.getenv("Conda_Forge") or "conda-forge"
     local command2 = macromamba
@@ -180,18 +181,21 @@ function mambaInstall(path)
         .. condaForge
     local status = os.execute(command2)
     if status ~= 0 then
-        error("Failed to execute command: " .. command2)
+        print("Failed to execute command: " .. command2)
+        os.exit(1)
     end
     local command3 = "mv " .. path .. "/temp/* " .. path
     local status = os.execute(command3)
     if status ~= 0 then
-        error("Failed to execute command: " .. command3)
+        print("Failed to execute command: " .. command3)
+        os.exit(1)
     end
     os.remove(macromamba)
     local command4 = "rm -rf " .. path .. "/temp " .. path .. "/pkgs " .. path .. "/etc " .. path .. "/conda-meta"
     local status = os.execute(command4)
     if status ~= 0 then
-        error("Failed to execute command: " .. command4)
+        print("Failed to execute command: " .. command4)
+        os.exit(1)
     end
 end
 
@@ -218,7 +222,8 @@ function generateMacroMamba(osType, archType)
             archType = "aarch64"
         end
     else
-        error("Unsupported architecture: " .. archType)
+        print("Unsupported architecture: " .. archType)
+        os.exit(1)
     end
     file = githubURL:gsub("/$", "") .. "/mamba-org/micromamba-releases/releases/latest/download/micromamba-%s-%s"
     file = file:format(osType, archType)
