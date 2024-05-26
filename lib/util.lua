@@ -204,11 +204,17 @@ function mambaInstall(path, version)
         print("Failed to execute command: " .. command3)
         os.exit(1)
     end
-    os.remove(macromamba)
-    local command4 = "rm -rf " .. path .. "/temp " .. path .. "/pkgs " .. path .. "/etc " .. path .. "/conda-meta"
+    local command4 = "mkdir -p " .. path .. "/share/gems/bin"
     local status = os.execute(command4)
     if status ~= 0 then
         print("Failed to execute command: " .. command4)
+        os.exit(1)
+    end
+    os.remove(macromamba)
+    local command5 = "rm -rf " .. path .. "/temp " .. path .. "/pkgs " .. path .. "/etc " .. path .. "/conda-meta"
+    local status = os.execute(command5)
+    if status ~= 0 then
+        print("Failed to execute command: " .. command5)
         os.exit(1)
     end
 end
