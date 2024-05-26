@@ -251,3 +251,13 @@ function generateMacroMamba(osType, archType)
 
     return file
 end
+
+function makeGemsPath(path)
+    local gemsPath = path .. "\\share\\gems\\bin"
+    local command = "mkdir " .. gemsPath
+    local status = os.execute(command)
+    if status ~= 0 then
+        print("Failed to execute command: " .. command)
+        os.exit(1)
+    end
+end
