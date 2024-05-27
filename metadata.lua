@@ -5,7 +5,7 @@ PLUGIN = {}
 --- Plugin name
 PLUGIN.name = "ruby"
 --- Plugin version
-PLUGIN.version = "0.3.0"
+PLUGIN.version = "0.3.1"
 --- Plugin homepage
 PLUGIN.homepage = "https://github.com/yanecc/vfox-ruby"
 --- Plugin license, please choose a correct license according to your needs.
