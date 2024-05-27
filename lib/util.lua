@@ -1,6 +1,6 @@
 local http = require("http")
 local strings = require("vfox.strings")
-local condaVersions = {
+local unixRubyVersions = {
     "3.2.2",
     "3.1.2",
     "3.1.1",
@@ -17,6 +17,21 @@ local condaVersions = {
     "2.4.2",
     "2.4.1",
     "2.3.3",
+    "24.0.1",
+    "24.0.0",
+    "23.1.2",
+    "23.1.1",
+    "23.1.0",
+    "23.0.1",
+    "23.0.0",
+    "22.3.1",
+    "22.3.0",
+    "22.2.0",
+    "22.1.0",
+    "22.0.0.2",
+    "21.3.0",
+    "21.2.0.1",
+    "21.2.0",
 }
 
 -- available.lua
@@ -26,9 +41,9 @@ function fetchAvailable(noCache)
         clearCache()
     end
     if RUNTIME.osType == "windows" then
-        result = fetchFromRubyInstaller()
+        result = fetchForWindows()
     else
-        result = fetchFromCondaForge()
+        result = fetchForUnix()
     end
 
     return result
@@ -38,7 +53,7 @@ function clearCache()
     os.remove(RUNTIME.pluginDirPath .. "/available.cache")
 end
 
-function fetchFromRubyInstaller()
+function fetchForWindows()
     local result = {}
     local versions = {}
     local resp, err = http.get({
@@ -81,10 +96,10 @@ function compareVersion(currentVersion, targetVersion)
     local currentVersionArray = strings.split(currentVersion, ".")
     local compareVersionArray = strings.split(targetVersion, ".")
 
-    for i, v in ipairs(currentVersionArray) do
-        if tonumber(v) > tonumber(compareVersionArray[i]) then
+    for i, v in ipairs(compareVersionArray) do
+        if tonumber(currentVersionArray[i]) > tonumber(v) then
             return 1
-        elseif tonumber(v) < tonumber(compareVersionArray[i]) then
+        elseif tonumber(currentVersionArray[i]) < tonumber(v) then
             return -1
         end
     end
@@ -92,13 +107,18 @@ function compareVersion(currentVersion, targetVersion)
     return 0
 end
 
-function fetchFromCondaForge()
+function fetchForUnix()
     local result = {}
-    for i, v in ipairs(condaVersions) do
+    for i, v in ipairs(unixRubyVersions) do
         if i == 1 then
             table.insert(result, {
                 version = v,
                 note = "latest",
+            })
+        elseif compareVersion(v, "21.2.0") >= 0 then
+            table.insert(result, {
+                version = v,
+                note = "truffleruby",
             })
         else
             table.insert(result, {
@@ -126,7 +146,7 @@ function getLatestVersion()
     if RUNTIME.osType == "windows" then
         version = getLatestVersionFromRubyInstaller()
     else
-        version = condaVersions[1]
+        version = unixRubyVersions[1]
     end
 
     return version
@@ -155,9 +175,16 @@ function generateURL(version, osType, archType)
         file = githubURL:gsub("/$", "")
             .. "/oneclick/rubyinstaller2/releases/download/RubyInstaller-%s-1/rubyinstaller-%s-1-x%s.7z"
         file = file:format(version, version, bit)
-    elseif not hasValue(condaVersions, version) then
+    elseif osType ~= "darwin" and osType ~= "linux" then
+        print("Unsupported OS: " .. osType)
+        os.exit(1)
+    elseif not hasValue(unixRubyVersions, version) then
         print("Unsupported version: " .. version)
         os.exit(1)
+    elseif compareVersion(version, "22.2.0") >= 0 then
+        file = generateTruffleRuby(version, osType, archType)
+    elseif compareVersion(version, "21.2.0") >= 0 and (osType ~= "darwin" or archType ~= "arm64") then
+        file = generateTruffleRuby(version, osType, archType)
     end
 
     return file
@@ -173,16 +200,26 @@ function hasValue(table, value)
     return false
 end
 
+function generateTruffleRuby(version, osType, archType)
+    local file
+    local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
+    local tag = compareVersion(version, "23.0.0") >= 0 and "graal-" .. version or "vm-" .. version
+    if archType == "arm64" then
+        archType = "aarch64"
+    end
+    if osType == "darwin" then
+        osType = "macos"
+    end
+    file = githubURL:gsub("/$", "") .. "/oracle/truffleruby/releases/download/%s/truffleruby-%s-%s-%s.tar.gz"
+    file = file:format(tag, version, osType, archType)
+
+    return file
+end
+
 -- post_install.lua
 function mambaInstall(path, version)
     local macromamba = path .. "/macromamba"
-    downloadMacroMamba(macromamba)
     local command1 = "chmod +x " .. macromamba
-    local status = os.execute(command1)
-    if status ~= 0 then
-        print("Failed to execute command: " .. command1)
-        os.exit(1)
-    end
     local condaForge = os.getenv("Conda_Forge") or "conda-forge"
     local command2 = macromamba
         .. " create -yqp "
@@ -193,30 +230,28 @@ function mambaInstall(path, version)
         .. version
         .. " -c "
         .. condaForge
-    local status = os.execute(command2)
-    if status ~= 0 then
-        print("Failed to execute command: " .. command2)
-        os.exit(1)
-    end
     local command3 = "mv " .. path .. "/temp/* " .. path
-    local status = os.execute(command3)
-    if status ~= 0 then
-        print("Failed to execute command: " .. command3)
-        os.exit(1)
-    end
     local command4 = "mkdir -p " .. path .. "/share/gems/bin"
-    local status = os.execute(command4)
-    if status ~= 0 then
-        print("Failed to execute command: " .. command4)
-        os.exit(1)
+    local command5 = "rm -rf " .. path .. "/temp " .. path .. "/pkgs " .. path .. "/etc " .. path .. "/conda-meta"
+
+    if compareVersion(version, "21.2.0") >= 0 then
+        local status = os.execute(command4)
+        if status ~= 0 then
+            print("Failed to execute command: " .. command4)
+            os.exit(1)
+        end
+        return
+    end
+
+    downloadMacroMamba(macromamba)
+    for _, command in ipairs({ command1, command2, command3, command4, command5 }) do
+        local status = os.execute(command)
+        if status ~= 0 then
+            print("Failed to execute command: " .. command)
+            os.exit(1)
+        end
     end
     os.remove(macromamba)
-    local command5 = "rm -rf " .. path .. "/temp " .. path .. "/pkgs " .. path .. "/etc " .. path .. "/conda-meta"
-    local status = os.execute(command5)
-    if status ~= 0 then
-        print("Failed to execute command: " .. command5)
-        os.exit(1)
-    end
 end
 
 function downloadMacroMamba(path)
