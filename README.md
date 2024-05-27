@@ -1,6 +1,8 @@
 # vfox-ruby
 
-[Ruby](https://www.ruby-lang.org/) language plugin for [vfox](https://vfox.lhan.me). For Linux and macos, both [Ruby(conda-forge)](https://github.com/conda-forge/ruby-feedstock) and [TruffleRuby](https://www.graalvm.org/ruby/) are provided. To use TruffleRuby, some [dependencies](https://github.com/oracle/truffleruby/blob/master/README.md#Dependencies) are required.
+[Ruby](https://www.ruby-lang.org/) language plugin for [vfox](https://vfox.lhan.me).
+
+For Linux and macos, both [Ruby(conda-forge)](https://github.com/conda-forge/ruby-feedstock) and [TruffleRuby](https://www.graalvm.org/ruby/) are provided. To use TruffleRuby, some [dependencies](https://github.com/oracle/truffleruby/blob/master/README.md#Dependencies) are required.
 
 ## Install
 

@@ -32,6 +32,13 @@ local unixRubyVersions = {
     "21.3.0",
     "21.2.0.1",
     "21.2.0",
+    "21.1.0",
+    "21.0.0.2",
+    "21.0.0",
+    "20.3.0",
+    "20.2.0",
+    "20.1.0",
+    "20.0.0",
 }
 
 -- available.lua
@@ -115,7 +122,7 @@ function fetchForUnix()
                 version = v,
                 note = "latest",
             })
-        elseif compareVersion(v, "21.2.0") >= 0 then
+        elseif compareVersion(v, "20.0.0") >= 0 then
             table.insert(result, {
                 version = v,
                 note = "truffleruby",
@@ -181,9 +188,7 @@ function generateURL(version, osType, archType)
     elseif not hasValue(unixRubyVersions, version) then
         print("Unsupported version: " .. version)
         os.exit(1)
-    elseif compareVersion(version, "22.2.0") >= 0 then
-        file = generateTruffleRuby(version, osType, archType)
-    elseif compareVersion(version, "21.2.0") >= 0 and (osType ~= "darwin" or archType ~= "arm64") then
+    elseif compareVersion(version, "20.0.0") >= 0 then
         file = generateTruffleRuby(version, osType, archType)
     end
 
@@ -204,6 +209,11 @@ function generateTruffleRuby(version, osType, archType)
     local file
     local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
     local tag = compareVersion(version, "23.0.0") >= 0 and "graal-" .. version or "vm-" .. version
+
+    if compareVersion(version, "22.2.0") < 0 and archType == "arm64" then
+        print("Unsupported version " .. version .. " for " .. archType)
+        os.exit(1)
+    end
     if archType == "arm64" then
         archType = "aarch64"
     end
@@ -234,7 +244,7 @@ function mambaInstall(path, version)
     local command4 = "mkdir -p " .. path .. "/share/gems/bin"
     local command5 = "rm -rf " .. path .. "/temp " .. path .. "/pkgs " .. path .. "/etc " .. path .. "/conda-meta"
 
-    if compareVersion(version, "21.2.0") >= 0 then
+    if compareVersion(version, "20.0.0") >= 0 then
         local status = os.execute(command4)
         if status ~= 0 then
             print("Failed to execute command: " .. command4)
