@@ -227,10 +227,31 @@ function generateTruffleRuby(version, osType, archType)
 end
 
 -- post_install.lua
+function unixInstall(path, version)
+    if compareVersion(version, "20.0.0") >= 0 then
+        patchTruffleRuby(path)
+    else
+        mambaInstall(path, version)
+    end
+end
+
+function patchTruffleRuby(path)
+    local command1 = path .. "/lib/truffle/post_install_hook.sh > /dev/null"
+    local command2 = "mkdir -p " .. path .. "/share/gems/bin"
+    local command3 = "rm -rf " .. path .. "/src"
+    for _, command in ipairs({ command1, command2, command3 }) do
+        local status = os.execute(command)
+        if status ~= 0 then
+            print("Failed to execute command: " .. command)
+            os.exit(1)
+        end
+    end
+end
+
 function mambaInstall(path, version)
     local macromamba = path .. "/macromamba"
-    local command1 = "chmod +x " .. macromamba
     local condaForge = os.getenv("Conda_Forge") or "conda-forge"
+    local command1 = "chmod +x " .. macromamba
     local command2 = macromamba
         .. " create -yqp "
         .. path
@@ -243,15 +264,6 @@ function mambaInstall(path, version)
     local command3 = "mv " .. path .. "/temp/* " .. path
     local command4 = "mkdir -p " .. path .. "/share/gems/bin"
     local command5 = "rm -rf " .. path .. "/temp " .. path .. "/pkgs " .. path .. "/etc " .. path .. "/conda-meta"
-
-    if compareVersion(version, "20.0.0") >= 0 then
-        local status = os.execute(command4)
-        if status ~= 0 then
-            print("Failed to execute command: " .. command4)
-            os.exit(1)
-        end
-        return
-    end
 
     downloadMacroMamba(macromamba)
     for _, command in ipairs({ command1, command2, command3, command4, command5 }) do

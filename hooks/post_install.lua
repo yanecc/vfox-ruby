@@ -6,5 +6,5 @@ function PLUGIN:PostInstall(ctx)
         makeGemsPath(sdkInfo.path)
         return
     end
-    mambaInstall(sdkInfo.path, sdkInfo.version)
+    unixInstall(sdkInfo.path, sdkInfo.version)
 end
