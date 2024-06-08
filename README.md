@@ -2,7 +2,7 @@
 
 [Ruby](https://www.ruby-lang.org/) language plugin for [vfox](https://vfox.lhan.me).
 
-For Linux and macos, both [Ruby(conda-forge)](https://github.com/conda-forge/ruby-feedstock) and [TruffleRuby](https://www.graalvm.org/ruby/) are provided. Bash and some [dependencies](https://github.com/oracle/truffleruby/blob/master/README.md#Dependencies) are required for TruffleRuby.
+For Linux and macos, both [Ruby(conda-forge)](https://github.com/conda-forge/ruby-feedstock) and [TruffleRuby](https://www.graalvm.org/ruby/) are provided.
 
 ## Install
 
@@ -43,8 +43,8 @@ export GITHUB_URL=https://mirror.ghproxy.com/https://github.com/
 
 ## FAQ
   
-- **Why is there a lack of updated versions?**
-To minimize the working requirements of vfox-ruby, vfox-ruby currently uses precompiled packages from conda-forge on Linux and macOS. You could open an issue in the ruby-feedstock to remind the maintainers to provide the latest build. Once the latest version is available, the plugin will be updated soon.
+- **Why is there a lack of updated versions?** <br>
+To minimize the working requirements of vfox-ruby, vfox-ruby currently uses precompiled packages from conda-forge on Linux and macOS. You could open an issue in the [ruby-feedstock](https://github.com/conda-forge/ruby-feedstock/issues) repository to remind the maintainers to provide the latest build. Once the latest version is available, the plugin will be updated soon.
 
-- **Are there any dependencies required to use this plugin?**
-On Windows, vfox-ruby uses standalone 7-ZIP archives provided by [RubyInstaller](https://github.com/oneclick/rubyinstaller2/wiki/faq). On Linux and macOS, installing Ruby requires no dependencies other than the built-in Linux commands. Installing TruffleRuby requires `make`, `gcc`, `g++` and `zlib-dev`, For more details, refer to the [dependencies](https://github.com/oracle/truffleruby/blob/master/README.md#Dependencies) section.
+- **Are there any dependencies required to use this plugin?** <br>
+On Windows, vfox-ruby uses standalone 7-ZIP archives provided by [RubyInstaller](https://github.com/oneclick/rubyinstaller2/wiki/faq). On Linux and macOS, installing Ruby requires no dependencies other than the built-in commands. Installing TruffleRuby requires `bash`, `make`, `gcc`, `g++` and `zlib-dev`, For more details, refer to the [dependencies](https://github.com/oracle/truffleruby/blob/master/README.md#Dependencies) section.
