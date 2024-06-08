@@ -239,6 +239,7 @@ function patchTruffleRuby(path)
     local command1 = path .. "/lib/truffle/post_install_hook.sh > /dev/null"
     local command2 = "mkdir -p " .. path .. "/share/gems/bin"
     local command3 = "rm -rf " .. path .. "/src"
+
     for _, command in ipairs({ command1, command2, command3 }) do
         local status = os.execute(command)
         if status ~= 0 then
