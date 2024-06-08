@@ -73,7 +73,7 @@ function fetchForWindows()
         error("Failed to get information: " .. err .. "\nstatus_code => " .. resp.status_code)
     end
 
-    for version in resp.body:gmatch('7z">Ruby (%d.%d.%d+)-1 %(x64%)') do
+    for version in resp.body:gmatch('7z">Ruby (%d.%d.%d+)%-1 %(x64%)') do
         table.insert(versions, version)
     end
     sortVersions(versions)
@@ -140,18 +140,28 @@ end
 -- pre_install.lua
 function getDownloadInfo(version)
     local file
+    local sha256
     if version == "latest" then
         version = getLatestVersion()
     end
-    file = generateURL(version, RUNTIME.osType, RUNTIME.archType)
+    file, sha256 = generateURL(version, RUNTIME.osType, RUNTIME.archType)
 
-    return file, version
+    return file, version, sha256
 end
 
 function getLatestVersion()
     local version
     if RUNTIME.osType == "windows" then
-        version = getLatestVersionFromRubyInstaller()
+        local resp, err = http.get({
+            url = "https://rubyinstaller.org/downloads/",
+        })
+        if err ~= nil then
+            error("Failed to request: " .. err)
+        end
+        if resp.status_code ~= 200 then
+            error("Failed to get latest version: " .. err .. "\nstatus_code => " .. resp.status_code)
+        end
+        version = resp.body:match("Ruby (%d.%d.%d+)%-1 %(x64%)")
     else
         version = unixRubyVersions[1]
     end
@@ -159,29 +169,16 @@ function getLatestVersion()
     return version
 end
 
-function getLatestVersionFromRubyInstaller()
-    local resp, err = http.get({
-        url = "https://rubyinstaller.org/downloads/",
-    })
-    if err ~= nil then
-        error("Failed to request: " .. err)
-    end
-    if resp.status_code ~= 200 then
-        error("Failed to get latest version: " .. err .. "\nstatus_code => " .. resp.status_code)
-    end
-    local version = resp.body:match("Ruby (%d.%d.%d+)-1 %(x64%)")
-
-    return version
-end
-
 function generateURL(version, osType, archType)
     local file
+    local sha256
     local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
     if osType == "windows" then
         local bit = archType == "amd64" and "64" or "86"
         file = githubURL:gsub("/$", "")
             .. "/oneclick/rubyinstaller2/releases/download/RubyInstaller-%s-1/rubyinstaller-%s-1-x%s.7z"
         file = file:format(version, version, bit)
+        sha256 = getSha256ForWindows(version, bit)
     elseif osType ~= "darwin" and osType ~= "linux" then
         print("Unsupported OS: " .. osType)
         os.exit(1)
@@ -192,7 +189,22 @@ function generateURL(version, osType, archType)
         file = generateTruffleRuby(version, osType, archType)
     end
 
-    return file
+    return file, sha256
+end
+
+function getSha256ForWindows(version, bit)
+    local resp, err = http.get({
+        url = "https://rubyinstaller.org/downloads/archives/",
+    })
+    if err ~= nil then
+        error("Failed to request: " .. err)
+    end
+    if resp.status_code ~= 200 then
+        error("Failed to get sha256: " .. err .. "\nstatus_code => " .. resp.status_code)
+    end
+    local sha256 = resp.body:match("rubyinstaller%-" .. version .. "%-1%-x" .. bit .. '.7z[%s%S]-value="([0-9a-z]+)')
+
+    return sha256
 end
 
 function hasValue(table, value)

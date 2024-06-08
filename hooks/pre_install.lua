@@ -1,10 +1,10 @@
 require("util")
 
 function PLUGIN:PreInstall(ctx)
-    local file, version = getDownloadInfo(ctx.version)
-
+    local file, version, sha256 = getDownloadInfo(ctx.version)
     return {
         url = file,
-        version = version
+        version = version,
+        sha256 = sha256
     }
 end
