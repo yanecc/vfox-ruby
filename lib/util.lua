@@ -1,7 +1,10 @@
 local http = require("http")
 local strings = require("vfox.strings")
-local unixRubyVersions = {
+local RubyVersions = {
+    "3.3.2",
+    "3.3.1",
     "3.2.2",
+    "3.1.4",
     "3.1.2",
     "3.1.1",
     "3.1.0",
@@ -39,6 +42,11 @@ local unixRubyVersions = {
     "20.2.0",
     "20.1.0",
     "20.0.0",
+}
+local HomebrewRubyVersions = {
+    "3.3.2",
+    "3.3.1",
+    "3.1.4",
 }
 
 -- available.lua
@@ -116,7 +124,7 @@ end
 
 function fetchForUnix()
     local result = {}
-    for i, v in ipairs(unixRubyVersions) do
+    for i, v in ipairs(RubyVersions) do
         if i == 1 then
             table.insert(result, {
                 version = v,
@@ -163,7 +171,7 @@ function getLatestVersion()
         end
         version = resp.body:match("Ruby (%d.%d.%d+)%-1 %(x64%)")
     else
-        version = unixRubyVersions[1]
+        version = RubyVersions[1]
     end
 
     return version
@@ -182,9 +190,11 @@ function generateURL(version, osType, archType)
     elseif osType ~= "darwin" and osType ~= "linux" then
         print("Unsupported OS: " .. osType)
         os.exit(1)
-    elseif not hasValue(unixRubyVersions, version) then
+    elseif not hasValue(RubyVersions, version) then
         print("Unsupported version: " .. version)
         os.exit(1)
+    elseif hasValue(HomebrewRubyVersions, version) then
+        file = generateHomebrewRuby(version, osType, archType)
     elseif compareVersion(version, "20.0.0") >= 0 then
         file = generateTruffleRuby(version, osType, archType)
     end
@@ -202,7 +212,7 @@ function getSha256ForWindows(version, bit)
     if resp.status_code ~= 200 then
         error("Failed to get sha256: " .. err .. "\nstatus_code => " .. resp.status_code)
     end
-    local sha256 = resp.body:match("rubyinstaller%-" .. version .. "%-1%-x" .. bit .. '.7z[%s%S]-value="([0-9a-z]+)')
+    local sha256 = resp.body:match(version .. "%-1%-x" .. bit .. '.7z[%s%S]-value="([0-9a-z]+)')
 
     return sha256
 end
@@ -215,6 +225,25 @@ function hasValue(table, value)
     end
 
     return false
+end
+
+function generateHomebrewRuby(version, osType, archType)
+    local file
+    local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
+
+    if osType == "linux" and archType == "amd64" then
+        file = "/Homebrew/homebrew-portable-ruby/releases/download/%s/portable-ruby-%s.x86_64_linux.bottle.tar.gz"
+    elseif osType == "darwin" and archType == "amd64" then
+        file = "/Homebrew/homebrew-portable-ruby/releases/download/%s/portable-ruby-%s.el_capitan.bottle.tar.gz"
+    elseif osType == "darwin" and archType == "arm64" then
+        file = "/Homebrew/homebrew-portable-ruby/releases/download/%s/portable-ruby-%s.arm64_big_sur.bottle.tar.gz"
+    else
+        print("Unsupported environment: " .. osType .. "-" .. archType)
+        os.exit(1)
+    end
+    file = githubURL:gsub("/$", "") .. file:format(version, version)
+
+    return file
 end
 
 function generateTruffleRuby(version, osType, archType)
@@ -242,6 +271,8 @@ end
 function unixInstall(path, version)
     if compareVersion(version, "20.0.0") >= 0 then
         patchTruffleRuby(path)
+    elseif hasValue(HomebrewRubyVersions, version) then
+        patchHomebrewRuby(path, version)
     else
         mambaInstall(path, version)
     end
@@ -251,6 +282,20 @@ function patchTruffleRuby(path)
     local command1 = path .. "/lib/truffle/post_install_hook.sh > /dev/null"
     local command2 = "mkdir -p " .. path .. "/share/gems/bin"
     local command3 = "rm -rf " .. path .. "/src"
+
+    for _, command in ipairs({ command1, command2, command3 }) do
+        local status = os.execute(command)
+        if status ~= 0 then
+            print("Failed to execute command: " .. command)
+            os.exit(1)
+        end
+    end
+end
+
+function patchHomebrewRuby(path, version)
+    local command1 = "mv " .. path .. "/" .. version .. "/* " .. path
+    local command2 = "mkdir -p " .. path .. "/share/gems/bin"
+    local command3 = "rm -rf " .. path .. "/.brew " .. path .. "/" .. version
 
     for _, command in ipairs({ command1, command2, command3 }) do
         local status = os.execute(command)
