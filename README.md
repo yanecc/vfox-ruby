@@ -48,6 +48,3 @@ Currently, vfox-ruby uses precompiled packages from conda-forge and Homebrew on 
 
 - **Are there any dependencies required to use this plugin?** <br>
 On Windows, vfox-ruby uses standalone 7-ZIP archives provided by [RubyInstaller](https://github.com/oneclick/rubyinstaller2/wiki/faq). On Linux and macOS, installing Ruby requires no dependencies other than the built-in commands. Installing TruffleRuby requires `bash`, `make`, `gcc`, `g++` and `zlib-dev`. For more details, refer to the [dependencies](https://github.com/oracle/truffleruby/blob/master/README.md#Dependencies) section.
-
-- **I want JRuby, Rubinius ... Can vfox-ruby provide them?** <br>
-No! Due to the non-compiled implementation, vfox-ruby is only intended to provide CRuby and TruffleRuby.

@@ -1,5 +1,10 @@
 local http = require("http")
 local strings = require("vfox.strings")
+local HomebrewRubyVersions = {
+    "3.3.2",
+    "3.3.1",
+    "3.1.4",
+}
 local RubyVersions = {
     "3.3.2",
     "3.3.1",
@@ -42,11 +47,11 @@ local RubyVersions = {
     "20.2.0",
     "20.1.0",
     "20.0.0",
-}
-local HomebrewRubyVersions = {
-    "3.3.2",
-    "3.3.1",
-    "3.1.4",
+    "24.0.1.jvm",
+    "24.0.0.jvm",
+    "23.1.2.jvm",
+    "23.1.1.jvm",
+    "23.1.0.jvm",
 }
 
 -- available.lua
@@ -230,26 +235,27 @@ end
 function generateHomebrewRuby(version, osType, archType)
     local file
     local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
+    local releaseURL = githubURL:gsub("/$", "") .. "/Homebrew/homebrew-portable-ruby/releases/"
 
     if osType == "linux" and archType == "amd64" then
-        file = "/Homebrew/homebrew-portable-ruby/releases/download/%s/portable-ruby-%s.x86_64_linux.bottle.tar.gz"
+        file = releaseURL .. "download/%s/portable-ruby-%s.x86_64_linux.bottle.tar.gz"
     elseif osType == "darwin" and archType == "amd64" then
-        file = "/Homebrew/homebrew-portable-ruby/releases/download/%s/portable-ruby-%s.el_capitan.bottle.tar.gz"
+        file = releaseURL .. "download/%s/portable-ruby-%s.el_capitan.bottle.tar.gz"
     elseif osType == "darwin" and archType == "arm64" then
-        file = "/Homebrew/homebrew-portable-ruby/releases/download/%s/portable-ruby-%s.arm64_big_sur.bottle.tar.gz"
+        file = releaseURL .. "download/%s/portable-ruby-%s.arm64_big_sur.bottle.tar.gz"
     else
         print("Unsupported environment: " .. osType .. "-" .. archType)
         os.exit(1)
     end
-    file = githubURL:gsub("/$", "") .. file:format(version, version)
+    file = file:format(version, version)
 
     return file
 end
 
 function generateTruffleRuby(version, osType, archType)
-    local file
+    local tag, file
     local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
-    local tag = compareVersion(version, "23.0.0") >= 0 and "graal-" .. version or "vm-" .. version
+    local releaseURL = githubURL:gsub("/$", "") .. "/oracle/truffleruby/releases/"
 
     if compareVersion(version, "22.2.0") < 0 and archType == "arm64" then
         print("Unsupported version " .. version .. " for " .. archType)
@@ -261,7 +267,13 @@ function generateTruffleRuby(version, osType, archType)
     if osType == "darwin" then
         osType = "macos"
     end
-    file = githubURL:gsub("/$", "") .. "/oracle/truffleruby/releases/download/%s/truffleruby-%s-%s-%s.tar.gz"
+    if version:sub(-3) == "jvm" and compareVersion(version, "23.1.0") >= 0 then
+        version = version:gsub("%.jvm$", "")
+        file = releaseURL .. "download/%s/truffleruby-jvm-%s-%s-%s.tar.gz"
+    else
+        file = releaseURL .. "download/%s/truffleruby-%s-%s-%s.tar.gz"
+    end
+    tag = compareVersion(version, "23.0.0") >= 0 and "graal-" .. version or "vm-" .. version
     file = file:format(tag, version, osType, archType)
 
     return file
