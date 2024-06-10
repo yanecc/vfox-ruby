@@ -2,7 +2,13 @@
 
 [Ruby](https://www.ruby-lang.org/) language plugin for [vfox](https://vfox.lhan.me).
 
-For Linux and macos, both [Ruby(conda-forge)](https://github.com/conda-forge/ruby-feedstock) and [TruffleRuby](https://www.graalvm.org/ruby/) are provided.
+## Requirement
+
+|   Branch    |                Dependencies                 |
+| :---------: | :-----------------------------------------: |
+|    Ruby     |                    none                     |
+|    JRuby    |              JRE v8 or higher               |
+| TruffleRuby | `bash`, `make`, `gcc`, `g++` and `zlib-dev` |
 
 ## Install
 
@@ -23,6 +29,9 @@ Install the latest stable version with `latest` tag.
 
 ``` shell
 vfox install ruby@latest
+vfox install ruby@9.4.5.0    # JRuby
+vfox install ruby@24.0.1     # TruffleRuby
+vfox install ruby@24.0.1.jvm # TruffleRuby-jvm
 ```
 
 Some environment variables are served as following:
@@ -44,7 +53,4 @@ export GITHUB_URL=https://mirror.ghproxy.com/https://github.com/
 ## FAQ
   
 - **Why is there a lack of updated versions?** <br>
-Currently, vfox-ruby uses precompiled packages from conda-forge and Homebrew on Linux and macOS. You could open an issue in the [ruby-feedstock](https://github.com/conda-forge/ruby-feedstock/issues) repository to remind the maintainers to provide the latest build. Once the latest version is available, the plugin will be updated soon.
-
-- **Are there any dependencies required to use this plugin?** <br>
-On Windows, vfox-ruby uses standalone 7-ZIP archives provided by [RubyInstaller](https://github.com/oneclick/rubyinstaller2/wiki/faq). On Linux and macOS, installing Ruby requires no dependencies other than the built-in commands. Installing TruffleRuby requires `bash`, `make`, `gcc`, `g++` and `zlib-dev`. For more details, refer to the [dependencies](https://github.com/oracle/truffleruby/blob/master/README.md#Dependencies) section.
+Currently, vfox-ruby uses precompiled packages from conda-forge and Homebrew on Linux and macOS. You could open an issue in the [ruby-feedstock](https://github.com/conda-forge/ruby-feedstock) repository to remind the maintainers to provide the latest build. Once the latest version is available, the plugin will be updated soon.

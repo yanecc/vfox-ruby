@@ -65,6 +65,12 @@ function fetchAvailable(noCache)
     else
         result = fetchForUnix()
     end
+    for _, v in ipairs(fetchJRubyVersions()) do
+        table.insert(result, {
+            version = v,
+            note = "jruby",
+        })
+    end
 
     return result
 end
@@ -83,7 +89,7 @@ function fetchForWindows()
         error("Failed to request: " .. err)
     end
     if resp.status_code ~= 200 then
-        error("Failed to get information: " .. err .. "\nstatus_code => " .. resp.status_code)
+        error("Failed to get Ruby versions: " .. err .. "\nstatus_code => " .. resp.status_code)
     end
 
     for version in resp.body:gmatch('7z">Ruby (%d.%d.%d+)%-1 %(x64%)') do
@@ -150,6 +156,34 @@ function fetchForUnix()
     return result
 end
 
+function fetchJRubyVersions()
+    local versions = {}
+    local patterns = {
+        "(9%.1%.1[6-9]%.0)</a>",
+        "(9%.2%.2%d%.%d)</a>",
+        "(9%.3%.1%d%.%d)</a>",
+        "(9%.[4-9]%.%d+%.%d)</a>",
+    }
+    local resp, err = http.get({
+        url = "https://www.jruby.org/files/downloads/index.html",
+    })
+    if err ~= nil then
+        error("Failed to request: " .. err)
+    end
+    if resp.status_code ~= 200 then
+        error("Failed to get JRuby versions: " .. err .. "\nstatus_code => " .. resp.status_code)
+    end
+
+    for _, pattern in ipairs(patterns) do
+        for match in resp.body:gmatch(pattern) do
+            table.insert(versions, match)
+        end
+    end
+    sortVersions(versions)
+
+    return versions
+end
+
 -- pre_install.lua
 function getDownloadInfo(version)
     local file
@@ -183,15 +217,12 @@ function getLatestVersion()
 end
 
 function generateURL(version, osType, archType)
-    local file
-    local sha256
-    local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
-    if osType == "windows" then
-        local bit = archType == "amd64" and "64" or "86"
-        file = githubURL:gsub("/$", "")
-            .. "/oneclick/rubyinstaller2/releases/download/RubyInstaller-%s-1/rubyinstaller-%s-1-x%s.7z"
-        file = file:format(version, version, bit)
-        sha256 = getSha256ForWindows(version, bit)
+    local file, sha256
+
+    if compareVersion(version, "9") == 0 then
+        file, sha256 = generateJRuby(version)
+    elseif osType == "windows" then
+        file, sha256 = generateWindowsRuby(version, archType)
     elseif osType ~= "darwin" and osType ~= "linux" then
         print("Unsupported OS: " .. osType)
         os.exit(1)
@@ -207,7 +238,42 @@ function generateURL(version, osType, archType)
     return file, sha256
 end
 
-function getSha256ForWindows(version, bit)
+function generateJRuby(version)
+    local file, sha256
+    if not hasValue(fetchJRubyVersions(), version) then
+        print("Unsupported version: " .. version)
+        os.exit(1)
+    end
+
+    if os.getenv("GITHUB_URL") then
+        file = os.getenv("GITHUB_URL"):gsub("/$", "") .. "/jruby/jruby/releases/download/%s/jruby-bin-%s.tar.gz"
+    else
+        file = "https://repo1.maven.org/maven2/org/jruby/jruby-dist/%s/jruby-dist-%s-bin.tar.gz"
+    end
+    file = file:format(version, version)
+    sha256 = "https://repo1.maven.org/maven2/org/jruby/jruby-dist/%s/jruby-dist-%s-bin.tar.gz.sha256"
+    local resp, err = http.get({
+        url = sha256:format(version, version),
+    })
+    if err ~= nil then
+        error("Failed to request: " .. err)
+    end
+    if resp.status_code ~= 200 then
+        error("Failed to get sha256: " .. err .. "\nstatus_code => " .. resp.status_code)
+    end
+    sha256 = resp.body
+
+    return file, sha256
+end
+
+function generateWindowsRuby(version, archType)
+    local file
+    local bit = archType == "amd64" and "64" or "86"
+    local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
+    file = githubURL:gsub("/$", "")
+        .. "/oneclick/rubyinstaller2/releases/download/RubyInstaller-%s-1/rubyinstaller-%s-1-x%s.7z"
+    file = file:format(version, version, bit)
+
     local resp, err = http.get({
         url = "https://rubyinstaller.org/downloads/archives/",
     })
@@ -219,7 +285,7 @@ function getSha256ForWindows(version, bit)
     end
     local sha256 = resp.body:match(version .. "%-1%-x" .. bit .. '.7z[%s%S]-value="([0-9a-z]+)')
 
-    return sha256
+    return file, sha256
 end
 
 function hasValue(table, value)
@@ -281,12 +347,28 @@ end
 
 -- post_install.lua
 function unixInstall(path, version)
-    if compareVersion(version, "20.0.0") >= 0 then
-        patchTruffleRuby(path)
-    elseif hasValue(HomebrewRubyVersions, version) then
+    if hasValue(HomebrewRubyVersions, version) then
         patchHomebrewRuby(path, version)
+    elseif compareVersion(version, "20.0.0") >= 0 then
+        patchTruffleRuby(path)
+    elseif compareVersion(version, "9") == 0 then
+        patchJRuby(path)
     else
         mambaInstall(path, version)
+    end
+end
+
+function patchHomebrewRuby(path, version)
+    local command1 = "mv " .. path .. "/" .. version .. "/* " .. path
+    local command2 = "mkdir -p " .. path .. "/share/gems/bin"
+    local command3 = "rm -rf " .. path .. "/.brew " .. path .. "/" .. version
+
+    for _, command in ipairs({ command1, command2, command3 }) do
+        local status = os.execute(command)
+        if status ~= 0 then
+            print("Failed to execute command: " .. command)
+            os.exit(1)
+        end
     end
 end
 
@@ -304,12 +386,11 @@ function patchTruffleRuby(path)
     end
 end
 
-function patchHomebrewRuby(path, version)
-    local command1 = "mv " .. path .. "/" .. version .. "/* " .. path
-    local command2 = "mkdir -p " .. path .. "/share/gems/bin"
-    local command3 = "rm -rf " .. path .. "/.brew " .. path .. "/" .. version
+function patchJRuby(path)
+    local command1 = "mkdir -p " .. path .. "/share/gems/bin"
+    local command2 = "rm -f " .. path .. "/bin/*.exe " .. path .. "/bin/*.bat " .. path .. "/bin/*.dll"
 
-    for _, command in ipairs({ command1, command2, command3 }) do
+    for _, command in ipairs({ command1, command2 }) do
         local status = os.execute(command)
         if status ~= 0 then
             print("Failed to execute command: " .. command)
