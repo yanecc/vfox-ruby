@@ -4,11 +4,11 @@
 
 ## Requirement
 
-| Distribution |                Dependencies                 |
-| :----------: | :-----------------------------------------: |
-|     Ruby     |                    none                     |
-|    JRuby     |              JRE v8 or higher               |
-| TruffleRuby  | `bash`, `make`, `gcc`, `g++` and `zlib-dev` |
+| Distribution |                              Dependencies                              |
+| :----------: | :--------------------------------------------------------------------: |
+|     Ruby     |                                  none                                  |
+|    JRuby     |                            JRE v8 or higher                            |
+| TruffleRuby  | `bash`, `make`, `gcc`, `g++`, `openssl-dev`, `yaml-dev` and `zlib-dev` |
 
 ## Install
 
