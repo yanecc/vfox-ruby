@@ -35,7 +35,7 @@ vfox install ruby@9.4.5.0    # JRuby
 vfox install ruby@24.0.1     # TruffleRuby
 vfox install ruby@24.0.1.jvm # TruffleRuby-jvm
 vfox install ruby@3.3.3.rb   # Ruby-build
-vfox install ruby@3.3.0.mrb	 # mRuby-build
+vfox install ruby@3.3.0.mrb  # mRuby-build
 ```
 
 Compiling installation with ruby-build only works on Unix-like systems. All [versions](https://github.com/rbenv/ruby-build/tree/master/share/ruby-build) of Ruby and mRuby supported by ruby-build (except for the development versions like `3.4-dev`) are available.
