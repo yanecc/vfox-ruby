@@ -1,4 +1,5 @@
 local http = require("http")
+local json = require("json")
 local strings = require("vfox.strings")
 local HomebrewRubyVersions = {
     "3.3.2",
@@ -223,6 +224,8 @@ function generateURL(version, osType, archType)
         file, sha256 = generateJRuby(version)
     elseif osType == "windows" then
         file, sha256 = generateWindowsRuby(version, archType)
+    elseif version:sub(-1) == "b" then
+        file = generateRubyBuild(version)
     elseif osType ~= "darwin" and osType ~= "linux" then
         print("Unsupported OS: " .. osType)
         os.exit(1)
@@ -288,6 +291,29 @@ function generateWindowsRuby(version, archType)
     return file, sha256
 end
 
+function generateRubyBuild(version)
+    version = version:gsub("%.b$", "")
+    if not version:match("[1-3]%.%d%.%d%-?%w*") and not version:match("mruby%-[1-3]%.[0-9]%.[0-2]") then
+        print("Unsupported version: " .. version)
+        os.exit(1)
+    end
+    local file
+    local latestRubyBuild = "https://api.github.com/repos/rbenv/ruby-build/releases/latest"
+    local resp, err = http.get({
+        url = latestRubyBuild,
+    })
+    if err ~= nil then
+        error("Failed to request: " .. err)
+    end
+    if resp.status_code ~= 200 then
+        error("Failed to get latest ruby-build: " .. err .. "\nstatus_code => " .. resp.status_code)
+    end
+    latestRubyBuild = json.decode(resp.body)
+    file = latestRubyBuild.tarball_url .. "#/ruby-build.tar.gz"
+
+    return file
+end
+
 function hasValue(table, value)
     for _, v in ipairs(table) do
         if v == value then
@@ -349,6 +375,8 @@ end
 function unixInstall(path, version)
     if hasValue(HomebrewRubyVersions, version) then
         patchHomebrewRuby(path, version)
+    elseif version:sub(-1) == "b" then
+        patchRubyBuild(path, version)
     elseif compareVersion(version, "20.0.0") >= 0 then
         patchTruffleRuby(path)
     elseif compareVersion(version, "9") == 0 then
@@ -364,6 +392,23 @@ function patchHomebrewRuby(path, version)
     local command3 = "rm -rf " .. path .. "/.brew " .. path .. "/" .. version
 
     for _, command in ipairs({ command1, command2, command3 }) do
+        local status = os.execute(command)
+        if status ~= 0 then
+            print("Failed to execute command: " .. command)
+            os.exit(1)
+        end
+    end
+end
+
+function patchRubyBuild(path, version)
+    local rubyBuild = path .. "/bin/ruby-build"
+    local command1 = rubyBuild .. " " .. version:gsub("%.b$", "") .. " " .. path .. "/build > /dev/null"
+    local command2 = "find " .. path .. " -mindepth 1 -maxdepth 1 ! -name 'build' -exec rm -rf {} +"
+    local command3 = "mv " .. path .. "/build/* " .. path
+    local command4 = "mkdir -p " .. path .. "/share/gems/bin"
+    local command5 = "rm -rf " .. path .. "/build"
+
+    for _, command in ipairs({ command1, command2, command3, command4, command5 }) do
         local status = os.execute(command)
         if status ~= 0 then
             print("Failed to execute command: " .. command)

@@ -4,11 +4,13 @@
 
 ## Requirement
 
-| Distribution |                              Dependencies                              |
-| :----------: | :--------------------------------------------------------------------: |
-|     Ruby     |                                  none                                  |
-|    JRuby     |                            JRE v8 or higher                            |
-| TruffleRuby  | `bash`, `make`, `gcc`, `g++`, `openssl-dev`, `yaml-dev` and `zlib-dev` |
+| Distribution |                                             Dependencies                                              |
+| :----------: | :---------------------------------------------------------------------------------------------------: |
+|     Ruby     |                                                 none                                                  |
+|    JRuby     |                                           JRE v8 or higher                                            |
+| TruffleRuby  |                `bash`, `make`, `gcc`, `g++`, `openssl-dev`, `yaml-dev` and `zlib-dev`                 |
+|    Ruby-b    | See [ruby-build's instructions](https://github.com/rbenv/ruby-build/wiki#suggested-build-environment) |
+|   mRuby-b    |                                          Ruby or TruffleRuby                                          |
 
 ## Install
 
@@ -29,10 +31,14 @@ Install the latest stable version with `latest` tag.
 
 ``` shell
 vfox install ruby@latest
-vfox install ruby@9.4.5.0    # JRuby
-vfox install ruby@24.0.1     # TruffleRuby
-vfox install ruby@24.0.1.jvm # TruffleRuby-jvm
+vfox install ruby@9.4.5.0          # JRuby
+vfox install ruby@24.0.1           # TruffleRuby
+vfox install ruby@24.0.1.jvm       # TruffleRuby-jvm
+vfox install ruby@3.4.0-preview1.b # Ruby-build
+vfox install ruby@mruby-3.3.0.b	   # mRuby-build
 ```
+
+Compiling installation with ruby-build only works on Unix-like systems. All [versions](https://github.com/rbenv/ruby-build/tree/master/share/ruby-build) of Ruby and mRuby provided by ruby-build (except for the dev versions like `3.4-dev`) are supported to install and use with the `.b` suffix.
 
 Some environment variables are served as following:
 
