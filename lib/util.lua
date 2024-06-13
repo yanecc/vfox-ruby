@@ -58,6 +58,7 @@ local RubyVersions = {
 -- available.lua
 function fetchAvailable(noCache)
     local result = {}
+
     if noCache then
         clearCache()
     end
@@ -136,6 +137,7 @@ end
 
 function fetchForUnix()
     local result = {}
+
     for i, v in ipairs(RubyVersions) do
         if i == 1 then
             table.insert(result, {
@@ -187,8 +189,8 @@ end
 
 -- pre_install.lua
 function getDownloadInfo(version)
-    local file
-    local sha256
+    local file, sha256
+
     if version == "latest" then
         version = getLatestVersion()
     end
@@ -199,6 +201,7 @@ end
 
 function getLatestVersion()
     local version
+
     if RUNTIME.osType == "windows" then
         local resp, err = http.get({
             url = "https://rubyinstaller.org/downloads/",
@@ -220,11 +223,11 @@ end
 function generateURL(version, osType, archType)
     local file, sha256
 
-    if compareVersion(version, "9") == 0 then
+    if version:sub(1, 2) == "9." then
         file, sha256 = generateJRuby(version)
     elseif osType == "windows" then
         file, sha256 = generateWindowsRuby(version, archType)
-    elseif version:sub(-1) == "b" then
+    elseif version:match("%.m?rb$") then
         file = generateRubyBuild(version)
     elseif osType ~= "darwin" and osType ~= "linux" then
         print("Unsupported OS: " .. osType)
@@ -243,6 +246,7 @@ end
 
 function generateJRuby(version)
     local file, sha256
+
     if not hasValue(fetchJRubyVersions(), version) then
         print("Unsupported version: " .. version)
         os.exit(1)
@@ -292,8 +296,8 @@ function generateWindowsRuby(version, archType)
 end
 
 function generateRubyBuild(version)
-    version = version:gsub("%.b$", "")
-    if not version:match("[1-3]%.%d%.%d%-?%w*") and not version:match("mruby%-[1-3]%.[0-9]%.[0-2]") then
+    version = version:gsub("%.m?rb$", "")
+    if not version:match("^[1-3]%.%d%.%d%-?%w*$") then
         print("Unsupported version: " .. version)
         os.exit(1)
     end
@@ -359,7 +363,7 @@ function generateTruffleRuby(version, osType, archType)
     if osType == "darwin" then
         osType = "macos"
     end
-    if version:sub(-3) == "jvm" and compareVersion(version, "23.1.0") >= 0 then
+    if version:sub(-4) == ".jvm" and compareVersion(version, "23.1.0") >= 0 then
         version = version:gsub("%.jvm$", "")
         file = releaseURL .. "download/%s/truffleruby-jvm-%s-%s-%s.tar.gz"
     else
@@ -375,7 +379,7 @@ end
 function unixInstall(path, version)
     if hasValue(HomebrewRubyVersions, version) then
         patchHomebrewRuby(path, version)
-    elseif version:sub(-1) == "b" then
+    elseif version:match("%.m?rb$") then
         patchRubyBuild(path, version)
     elseif compareVersion(version, "20.0.0") >= 0 then
         patchTruffleRuby(path)
@@ -401,12 +405,14 @@ function patchHomebrewRuby(path, version)
 end
 
 function patchRubyBuild(path, version)
-    local rubyBuild = path .. "/bin/ruby-build"
-    local command1 = rubyBuild .. " " .. version:gsub("%.b$", "") .. " " .. path .. "/build > /dev/null"
-    local command2 = "find " .. path .. " -mindepth 1 -maxdepth 1 ! -name 'build' -exec rm -rf {} +"
-    local command3 = "mv " .. path .. "/build/* " .. path
+    version = version:gsub("%.mrb$", "")
+    local rbVersion = version:sub(-3) == ".rb" and version:sub(1, -4) or "mruby-" .. version
+    local builder = path .. "/../ruby-build"
+    local command1 = "mkdir -p " .. builder
+    local command2 = "mv " .. path .. "/* " .. path .. "/.git* " .. builder
+    local command3 = builder .. "/bin/ruby-build " .. rbVersion .. " " .. path .. " > /dev/null"
     local command4 = "mkdir -p " .. path .. "/share/gems/bin"
-    local command5 = "rm -rf " .. path .. "/build"
+    local command5 = "rm -rf " .. builder
 
     for _, command in ipairs({ command1, command2, command3, command4, command5 }) do
         local status = os.execute(command)
