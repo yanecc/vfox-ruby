@@ -462,7 +462,7 @@ function mambaInstall(rootPath, path, version)
     local command4 = "mkdir -p " .. path .. "/share/gems/bin"
     local command5 = "rm -rf " .. path .. "/etc " .. path .. "/conda-meta " .. conda
 
-    downloadMacroMamba(path .. "/micromamba")
+    downloadMicroMamba(path .. "/micromamba")
     for _, command in ipairs({ command1, command2, command3, command4, command5 }) do
         local status = os.execute(command)
         if status ~= 0 then
@@ -472,8 +472,8 @@ function mambaInstall(rootPath, path, version)
     end
 end
 
-function downloadMacroMamba(path)
-    local file = generateMacroMamba(RUNTIME.osType, RUNTIME.archType)
+function downloadMicroMamba(path)
+    local file = generateMicroMamba(RUNTIME.osType, RUNTIME.archType)
     local err = http.download_file({
         url = file,
     }, path)
@@ -482,7 +482,7 @@ function downloadMacroMamba(path)
     end
 end
 
-function generateMacroMamba(osType, archType)
+function generateMicroMamba(osType, archType)
     local file
     local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
     if osType == "darwin" then
