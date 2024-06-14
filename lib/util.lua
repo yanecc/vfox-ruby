@@ -408,11 +408,11 @@ end
 
 function patchRubyBuild(path, version)
     version = version:gsub("%.mrb$", "")
-    local rbVersion = version:sub(-3) == ".rb" and version:sub(1, -4) or "mruby-" .. version
+    version = version:sub(-3) == ".rb" and version:sub(1, -4) or "mruby-" .. version
     local builder = path .. "/../ruby-build"
     local command1 = "mkdir -p " .. builder
     local command2 = "mv " .. path .. "/* " .. path .. "/.git* " .. builder
-    local command3 = builder .. "/bin/ruby-build " .. rbVersion .. " " .. path .. " > /dev/null"
+    local command3 = builder .. "/bin/ruby-build " .. version .. " " .. path .. " > /dev/null"
     local command4 = "mkdir -p " .. path .. "/share/gems/bin"
     local command5 = "rm -rf " .. builder
 
