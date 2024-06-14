@@ -2,11 +2,13 @@ local http = require("http")
 local json = require("json")
 local strings = require("vfox.strings")
 local HomebrewRubyVersions = {
+    "3.3.3",
     "3.3.2",
     "3.3.1",
     "3.1.4",
 }
 local RubyVersions = {
+    "3.3.3",
     "3.3.2",
     "3.3.1",
     "3.2.2",
