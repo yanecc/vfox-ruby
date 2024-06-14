@@ -378,7 +378,7 @@ function generateTruffleRuby(version, osType, archType)
 end
 
 -- post_install.lua
-function unixInstall(path, version)
+function unixInstall(rootPath, path, version)
     if hasValue(HomebrewRubyVersions, version) then
         patchHomebrewRuby(path, version)
     elseif version:match("%.m?rb$") then
@@ -388,7 +388,7 @@ function unixInstall(path, version)
     elseif compareVersion(version, "9") == 0 then
         patchJRuby(path)
     else
-        mambaInstall(path, version)
+        mambaInstall(rootPath, path, version)
     end
 end
 
@@ -452,24 +452,17 @@ function patchJRuby(path)
     end
 end
 
-function mambaInstall(path, version)
-    local macromamba = path .. "/macromamba"
+function mambaInstall(rootPath, path, version)
+    local conda = rootPath .. "/conda"
+    local mamba = rootPath .. "/conda/micromamba"
     local condaForge = os.getenv("Conda_Forge") or "conda-forge"
-    local command1 = "chmod +x " .. macromamba
-    local command2 = macromamba
-        .. " create -yqp "
-        .. path
-        .. "/temp -r "
-        .. path
-        .. " ruby="
-        .. version
-        .. " -c "
-        .. condaForge
-    local command3 = "mv " .. path .. "/temp/* " .. path
+    local command1 = "mv " .. path .. " " .. conda
+    local command2 = "chmod +x " .. mamba
+    local command3 = mamba .. " create -yqp " .. path .. " -r " .. conda .. " ruby=" .. version .. " -c " .. condaForge
     local command4 = "mkdir -p " .. path .. "/share/gems/bin"
-    local command5 = "rm -rf " .. path .. "/temp " .. path .. "/pkgs " .. path .. "/etc " .. path .. "/conda-meta"
+    local command5 = "rm -rf " .. path .. "/etc " .. path .. "/conda-meta " .. conda
 
-    downloadMacroMamba(macromamba)
+    downloadMacroMamba(path .. "/micromamba")
     for _, command in ipairs({ command1, command2, command3, command4, command5 }) do
         local status = os.execute(command)
         if status ~= 0 then
@@ -477,7 +470,6 @@ function mambaInstall(path, version)
             os.exit(1)
         end
     end
-    os.remove(macromamba)
 end
 
 function downloadMacroMamba(path)

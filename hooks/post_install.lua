@@ -6,5 +6,5 @@ function PLUGIN:PostInstall(ctx)
         makeGemsPath(sdkInfo.path)
         return
     end
-    unixInstall(sdkInfo.path, sdkInfo.version)
+    unixInstall(ctx.rootPath, sdkInfo.path, sdkInfo.version)
 end
