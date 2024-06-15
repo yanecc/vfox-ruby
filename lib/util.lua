@@ -441,7 +441,7 @@ end
 
 function patchJRuby(path)
     local command1 = "mkdir -p " .. path .. "/share/gems/bin"
-    local command2 = "rm -f " .. path .. "/bin/*.exe " .. path .. "/bin/*.bat " .. path .. "/bin/*.dll"
+    local command2 = "rm -f " .. path .. "/bin/*.{exe,bat,dll}"
 
     for _, command in ipairs({ command1, command2 }) do
         local status = os.execute(command)
