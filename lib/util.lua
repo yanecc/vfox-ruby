@@ -53,8 +53,8 @@ function clearCache()
 end
 
 function fetchForWindows()
-    local result
-    local versions
+    local result = {}
+    local versions = {}
     local resp, err = http.get({
         url = "https://rubyinstaller.org/downloads/archives/",
     })
@@ -107,7 +107,7 @@ function compareVersion(currentVersion, targetVersion)
 end
 
 function fetchForUnix()
-    local result
+    local result = {}
 
     for i, v in ipairs(RubyVersions) do
         if i == 1 then
