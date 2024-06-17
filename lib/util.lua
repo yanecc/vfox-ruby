@@ -6,8 +6,9 @@ function fetchVersions()
     local rubyVersions = {}
     local jrubyVersions = {}
     local homebrewRubyVersions = {}
+    local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
     local resp, err = http.get({
-        url = "https://github.com/yanecc/vfox-ruby/releases/manifest",
+        url = githubURL:gsub("/$", "") .. "/yanecc/vfox-ruby/releases/manifest",
     })
     if err ~= nil then
         error("Failed to request: " .. err)
