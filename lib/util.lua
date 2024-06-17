@@ -3,9 +3,7 @@ local json = require("json")
 local strings = require("vfox.strings")
 
 function fetchVersions()
-    local rubyVersions = {}
-    local jrubyVersions = {}
-    local homebrewRubyVersions = {}
+    local rubyVersions, jrubyVersions, homebrewRubyVersions
     local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
     local resp, err = http.get({
         url = githubURL:gsub("/$", "") .. "/yanecc/vfox-ruby/releases/manifest",
@@ -17,8 +15,8 @@ function fetchVersions()
         error("Failed to get versions: " .. err .. "\nstatus_code => " .. resp.status_code)
     end
 
-    local versions = resp.body:match("<code>(.-)</code>")
-    local versionJson = json.decode(versions)
+    local versionList = resp.body:match("<code>(.-)</code>")
+    local versionJson = json.decode(versionList)
     rubyVersions = versionJson.ruby
     jrubyVersions = versionJson.jruby
     homebrewRubyVersions = versionJson.homebrew
