@@ -1,61 +1,31 @@
 local http = require("http")
 local json = require("json")
 local strings = require("vfox.strings")
-local HomebrewRubyVersions = {
-    "3.3.3",
-    "3.3.2",
-    "3.3.1",
-    "3.1.4",
-}
-local RubyVersions = {
-    "3.3.3",
-    "3.3.2",
-    "3.3.1",
-    "3.2.2",
-    "3.1.4",
-    "3.1.2",
-    "3.1.1",
-    "3.1.0",
-    "2.7.2",
-    "2.6.6",
-    "2.6.5",
-    "2.6.3",
-    "2.5.7",
-    "2.5.5",
-    "2.4.5",
-    "2.4.4",
-    "2.4.3",
-    "2.4.2",
-    "2.4.1",
-    "2.3.3",
-    "24.0.1",
-    "24.0.0",
-    "23.1.2",
-    "23.1.1",
-    "23.1.0",
-    "23.0.1",
-    "23.0.0",
-    "22.3.1",
-    "22.3.0",
-    "22.2.0",
-    "22.1.0",
-    "22.0.0.2",
-    "21.3.0",
-    "21.2.0.1",
-    "21.2.0",
-    "21.1.0",
-    "21.0.0.2",
-    "21.0.0",
-    "20.3.0",
-    "20.2.0",
-    "20.1.0",
-    "20.0.0",
-    "24.0.1.jvm",
-    "24.0.0.jvm",
-    "23.1.2.jvm",
-    "23.1.1.jvm",
-    "23.1.0.jvm",
-}
+
+function fetchVersions()
+    local rubyVersions = {}
+    local jrubyVersions = {}
+    local homebrewRubyVersions = {}
+    local resp, err = http.get({
+        url = "https://github.com/yanecc/vfox-ruby/releases/manifest",
+    })
+    if err ~= nil then
+        error("Failed to request: " .. err)
+    end
+    if resp.status_code ~= 200 then
+        error("Failed to get versions: " .. err .. "\nstatus_code => " .. resp.status_code)
+    end
+
+    local versions = resp.body:match("<code>(.-)</code>")
+    local versionJson = json.decode(versions)
+    rubyVersions = versionJson.ruby
+    jrubyVersions = versionJson.jruby
+    homebrewRubyVersions = versionJson.homebrew
+
+    return rubyVersions, jrubyVersions, homebrewRubyVersions
+end
+
+local RubyVersions, JRubyVersions, HomebrewRubyVersions = fetchVersions()
 
 -- available.lua
 function fetchAvailable(noCache)
@@ -69,7 +39,7 @@ function fetchAvailable(noCache)
     else
         result = fetchForUnix()
     end
-    for _, v in ipairs(fetchJRubyVersions()) do
+    for _, v in ipairs(JRubyVersions) do
         table.insert(result, {
             version = v,
             note = "jruby",
@@ -159,34 +129,6 @@ function fetchForUnix()
     end
 
     return result
-end
-
-function fetchJRubyVersions()
-    local versions = {}
-    local patterns = {
-        "(9%.1%.1[6-9]%.0)</a>",
-        "(9%.2%.2%d%.%d)</a>",
-        "(9%.3%.1%d%.%d)</a>",
-        "(9%.[4-9]%.%d+%.%d)</a>",
-    }
-    local resp, err = http.get({
-        url = "https://www.jruby.org/files/downloads/index.html",
-    })
-    if err ~= nil then
-        error("Failed to request: " .. err)
-    end
-    if resp.status_code ~= 200 then
-        error("Failed to get JRuby versions: " .. err .. "\nstatus_code => " .. resp.status_code)
-    end
-
-    for _, pattern in ipairs(patterns) do
-        for match in resp.body:gmatch(pattern) do
-            table.insert(versions, match)
-        end
-    end
-    sortVersions(versions)
-
-    return versions
 end
 
 -- pre_install.lua
