@@ -166,13 +166,12 @@ end
 function generateURL(version, osType, archType)
     local file, sha256
 
-    -- if version:sub(1, 2) == "9." then
     if hasValue(JRubyVersions, version) then
         file, sha256 = generateJRuby(version)
     elseif osType == "windows" then
         file, sha256 = generateWindowsRuby(version, archType)
-    elseif version:match("%.m?rb$") then
-        file = generateRubyBuild(version)
+    elseif version:match("^[1-3]%.%d%.%d%-?%w*%.m?rb$") then
+        file = generateRubyBuild()
     elseif osType ~= "darwin" and osType ~= "linux" then
         print("Unsupported OS: " .. osType)
         os.exit(1)
@@ -213,7 +212,7 @@ function generateJRuby(version)
 end
 
 function generateWindowsRuby(version, archType)
-    local file
+    local file, sha256
     local bit = archType == "amd64" and "64" or "86"
     local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
     file = githubURL:gsub("/$", "")
@@ -229,17 +228,12 @@ function generateWindowsRuby(version, archType)
     if resp.status_code ~= 200 then
         error("Failed to get sha256: " .. err .. "\nstatus_code => " .. resp.status_code)
     end
-    local sha256 = resp.body:match(version .. "%-1%-x" .. bit .. '.7z[%s%S]-value="([0-9a-z]+)')
+    sha256 = resp.body:match(version .. "%-1%-x" .. bit .. '.7z[%s%S]-value="([0-9a-z]+)')
 
     return file, sha256
 end
 
-function generateRubyBuild(version)
-    version = version:gsub("%.m?rb$", "")
-    if not version:match("^[1-3]%.%d%.%d%-?%w*$") then
-        print("Unsupported version: " .. version)
-        os.exit(1)
-    end
+function generateRubyBuild()
     local file
     local latestRubyBuild = "https://api.github.com/repos/rbenv/ruby-build/releases/latest"
     local resp, err = http.get({
