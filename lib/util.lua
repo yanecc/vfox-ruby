@@ -166,7 +166,8 @@ end
 function generateURL(version, osType, archType)
     local file, sha256
 
-    if version:sub(1, 2) == "9." then
+    -- if version:sub(1, 2) == "9." then
+    if hasValue(JRubyVersions, version) then
         file, sha256 = generateJRuby(version)
     elseif osType == "windows" then
         file, sha256 = generateWindowsRuby(version, archType)
@@ -189,11 +190,6 @@ end
 
 function generateJRuby(version)
     local file, sha256
-
-    if not hasValue(fetchJRubyVersions(), version) then
-        print("Unsupported version: " .. version)
-        os.exit(1)
-    end
 
     if os.getenv("GITHUB_URL") then
         file = os.getenv("GITHUB_URL"):gsub("/$", "") .. "/jruby/jruby/releases/download/%s/jruby-bin-%s.tar.gz"
@@ -322,12 +318,12 @@ end
 function unixInstall(rootPath, path, version)
     if hasValue(HomebrewRubyVersions, version) then
         patchHomebrewRuby(path, version)
+    elseif hasValue(JRubyVersions, version) then
+        patchJRuby(path)
     elseif version:match("%.m?rb$") then
         patchRubyBuild(path, version)
     elseif compareVersion(version, "20.0.0") >= 0 then
         patchTruffleRuby(path)
-    elseif compareVersion(version, "9") == 0 then
-        patchJRuby(path)
     else
         mambaInstall(rootPath, path, version)
     end
