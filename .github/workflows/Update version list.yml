@@ -17,6 +17,7 @@ jobs:
       - name: Check updates
         id: check_updates
         run: |
+          chmod +x ./.github/UpdateVersionList
           ./.github/UpdateVersionList -o manifest.md
           if [ -s manifest.md ]; then
             HAS_UPDATES=true
