@@ -1,0 +1,39 @@
+name: Check Updates Daily
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  push:
+    branches: ["main"]
+
+jobs:
+  update-version-list:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download source
+        uses: actions/checkout@v4
+
+      - name: Check updates
+        id: check_updates
+        run: |
+          ./.github/UpdateVersionList -o manifest.md
+          if [ -s manifest.md ]; then
+            HAS_UPDATES=true
+            echo "Updates found"
+          else
+            HAS_UPDATES=false
+            echo "Already up to date"
+          fi
+          echo "HAS_UPDATES=$HAS_UPDATES" >> $GITHUB_OUTPUT
+
+      - name: Update manifest body
+        if: ${{ steps.check_updates.outputs.HAS_UPDATES }}
+        uses: ncipollo/release-action@v1
+        with:
+          name: "manifest"
+          tag: "manifest"
+          allowUpdates: true
+          bodyFile: "manifest.md"
+          omitNameDuringUpdate: true
+          omitPrereleaseDuringUpdate: true

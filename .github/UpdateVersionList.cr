@@ -55,17 +55,20 @@ isUpdated = true
 if vlist["ruby"][0] != latestHomebrewRuby
   isUpdated = false
   vlist["homebrew"].unshift(latestHomebrewRuby)
-end
-
-if vlist["jruby"] != fetchJRubyVersions
-  isUpdated = false
-  vlist["jruby"] = fetchJRubyVersions
+  puts "Homebrew Ruby has an updated version: #{latestHomebrewRuby}"
 end
 
 if vlist["truffleruby"][0] != latestTruffleRuby
   isUpdated = false
   vlist["truffleruby"].unshift(latestTruffleRuby)
   vlist["truffleruby-jvm"].unshift(latestTruffleRuby + ".jvm")
+  puts "TruffleRuby has an updated version: #{latestTruffleRuby}"
+end
+
+if vlist["jruby"] != fetchJRubyVersions
+  isUpdated = false
+  vlist["jruby"] = fetchJRubyVersions
+  puts "JRuby version list is updated"
 end
 
 unless isUpdated
