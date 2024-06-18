@@ -29,7 +29,7 @@ jobs:
           echo "HAS_UPDATES=$HAS_UPDATES" >> $GITHUB_OUTPUT
 
       - name: Update manifest body
-        if: ${{ steps.check_updates.outputs.HAS_UPDATES }}
+        if: ${{ steps.check_updates.outputs.HAS_UPDATES == 'true' }}
         uses: ncipollo/release-action@v1
         with:
           name: "manifest"
