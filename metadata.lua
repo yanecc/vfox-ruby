@@ -39,6 +39,6 @@ PLUGIN.notes = {
     "make sure you have all dependencies installed before installing a certain distribution",
     "for more information, see https://github.com/yanecc/vfox-ruby#Requirement",
     "",
-    "you can build Ruby or mRuby through versions with the suffix .rb or .mrb",
+    "you can build Ruby or mRuby through versions with the .rb or .mrb suffix",
     "",
 }
