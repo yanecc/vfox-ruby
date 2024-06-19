@@ -35,5 +35,10 @@ NOTE:
 PLUGIN.manifestUrl = "https://github.com/yanecc/vfox-ruby/releases/download/manifest/manifest.json"
 -- Some things that need user to be attention!
 PLUGIN.notes = {
+    "vfox-ruby supports Ruby, JRuby, TruffleRuby and mRuby",
+    "make sure you have all dependencies installed before installing a certain distribution",
+    "for more information, see https://github.com/yanecc/vfox-ruby#Requirement",
+    "",
+    "you can build Ruby or mRuby through versions with the suffix .rb or .mrb",
     "",
 }
