@@ -27,11 +27,11 @@ end
 local RubyVersions, JRubyVersions, HomebrewRubyVersions = fetchVersions()
 
 -- available.lua
-function fetchAvailable(noCache)
+function fetchAvailable(buildArg)
     local result
 
-    if noCache then
-        clearCache()
+    if buildArg then
+        result = fetchRubyVersions(resp.body)
     end
     if RUNTIME.osType == "windows" then
         result = fetchForWindows()
@@ -48,8 +48,22 @@ function fetchAvailable(noCache)
     return result
 end
 
-function clearCache()
-    os.remove(RUNTIME.pluginDirPath .. "/available.cache")
+function fetchRubyBuildVersions()
+    local result = {}
+    local versions = {}
+    local resp, err = http.get({
+        url = "https://cache.ruby-lang.org/pub/ruby/index.txt",
+    })
+    if err ~= nil then
+        error("Failed to request: " .. err)
+    end
+    if resp.status_code ~= 200 then
+        error("Failed to get Ruby versions: " .. err .. "\nstatus_code => " .. resp.status_code)
+    end
+
+    for version in resp.body:gmatch("(%d.%d.%d.-)%s") do
+        table.insert(versions, version)
+    end
 end
 
 function fetchForWindows()
@@ -128,6 +142,11 @@ function fetchForUnix()
     end
 
     return result
+end
+
+function clearCache()
+    os.remove(RUNTIME.pluginDirPath .. "/available.cache")
+    exit()
 end
 
 -- pre_install.lua
@@ -215,8 +234,8 @@ function generateWindowsRuby(version, archType)
     local file, sha256
     local bit = archType == "amd64" and "64" or "86"
     local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
-    file = githubURL:gsub("/$", "")
-        .. "/oneclick/rubyinstaller2/releases/download/RubyInstaller-%s-1/rubyinstaller-%s-1-x%s.7z"
+    file = "rubyinstaller-%s-1-x%s.7z"
+    file = githubURL:gsub("/$", "") .. "/oneclick/rubyinstaller2/releases/download/RubyInstaller-%s-1/" .. file
     file = file:format(version, version, bit)
 
     local resp, err = http.get({
@@ -246,7 +265,7 @@ function generateRubyBuild()
         error("Failed to get latest ruby-build: " .. err .. "\nstatus_code => " .. resp.status_code)
     end
     latestRubyBuild = json.decode(resp.body)
-    file = latestRubyBuild.tarball_url .. "#/ruby-build.tar.gz"
+    file = latestRubyBuild.tarball_url .. "#/ruby-build.tgz"
 
     return file
 end

@@ -2,10 +2,27 @@ require "http/client"
 require "json"
 require "option_parser"
 
+record RBFile, name : String do
+  include JSON::Serializable
+end
+
+def fetchRubyBuildVersions
+  response = HTTP::Client.get "https://api.github.com/repos/rbenv/ruby-build/contents/share/ruby-build"
+  fileList = Array(RBFile).from_json response.body
+  versionList = fileList.map &.name
+  versionList.select! &.match_full /[1-3]\.\d\.\d-?\w*|mruby-\d\.\d\.\d/
+  mrubyList, rubyList = versionList.partition &.starts_with? "mruby-"
+  rubyList.map! { |version| version + ".rb" }
+  mrubyList.map! { |version| version.split("-").last + ".mrb" }
+  rubyList.reverse!
+  mrubyList.reverse!
+  versionList = rubyList + mrubyList
+end
+
 def getLatestVersion(url)
   response = HTTP::Client.get url
   latestRelease = response.headers["Location"]
-  latestVersion = latestRelease[/(\d[\.\d]+)/]
+  latestVersion = latestRelease[/\d[\.\d]+/]
 end
 
 def fetchVersionList
@@ -69,6 +86,12 @@ if vlist["jruby"] != fetchJRubyVersions
   isUpdated = false
   vlist["jruby"] = fetchJRubyVersions
   puts "JRuby version list is updated"
+end
+
+if vlist["ruby-build"] != fetchRubyBuildVersions
+  isUpdated = false
+  vlist["ruby-build"] = fetchRubyBuildVersions
+  puts "Ruby-build version list is updated"
 end
 
 unless isUpdated
