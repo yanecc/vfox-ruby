@@ -20,11 +20,12 @@ After installing [vfox](https://github.com/version-fox/vfox), install the plugin
 vfox add ruby
 ```
 
-Next, search and select the version to install. By default, vfox keeps cache for available versions, use `--no-cache` flag to search without cache and rebuild the cache.
+Next, search and select the version to install. The `--ruby-build` flag is used to list all the versions that can be built and installed by ruby-build. By default, vfox keeps cache for available versions, use the `--no-cache` flag to delete the cache file.
 
 ``` shell
 vfox search ruby
-vfox search ruby --no-cache
+vfox search ruby --ruby-build
+vfox search ruby --no-cache && vfox search ruby
 ```
 
 Install the latest stable version with `latest` tag.

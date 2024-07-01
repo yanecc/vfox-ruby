@@ -2,8 +2,8 @@ local http = require("http")
 local json = require("json")
 local strings = require("vfox.strings")
 
-function fetchVersions()
-    local rubyVersions, jrubyVersions, homebrewRubyVersions
+function fetchManifest()
+    local manifest
     local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
     local resp, err = http.get({
         url = githubURL:gsub("/$", "") .. "/yanecc/vfox-ruby/releases/manifest",
@@ -14,31 +14,31 @@ function fetchVersions()
     if resp.status_code ~= 200 then
         error("Failed to get versions: " .. err .. "\nstatus_code => " .. resp.status_code)
     end
+    manifest = resp.body:match("<code>(.-)</code>")
+    manifest = json.decode(manifest)
 
-    local versionList = resp.body:match("<code>(.-)</code>")
-    local versionJson = json.decode(versionList)
-    rubyVersions = versionJson.ruby
-    jrubyVersions = versionJson.jruby
-    homebrewRubyVersions = versionJson.homebrew
-
-    return rubyVersions, jrubyVersions, homebrewRubyVersions
+    return manifest
 end
 
-local RubyVersions, JRubyVersions, HomebrewRubyVersions = fetchVersions()
+local Manifest = fetchManifest()
 
 -- available.lua
 function fetchAvailable(buildArg)
-    local result
+    local result = {}
 
-    if buildArg then
-        result = fetchRubyVersions(resp.body)
-    end
     if RUNTIME.osType == "windows" then
         result = fetchForWindows()
+    elseif buildArg then
+        for _, v in ipairs(Manifest["ruby-build"]) do
+            table.insert(result, {
+                version = v,
+            })
+        end
+        return result
     else
         result = fetchForUnix()
     end
-    for _, v in ipairs(JRubyVersions) do
+    for _, v in ipairs(Manifest.jruby) do
         table.insert(result, {
             version = v,
             note = "jruby",
@@ -46,24 +46,6 @@ function fetchAvailable(buildArg)
     end
 
     return result
-end
-
-function fetchRubyBuildVersions()
-    local result = {}
-    local versions = {}
-    local resp, err = http.get({
-        url = "https://cache.ruby-lang.org/pub/ruby/index.txt",
-    })
-    if err ~= nil then
-        error("Failed to request: " .. err)
-    end
-    if resp.status_code ~= 200 then
-        error("Failed to get Ruby versions: " .. err .. "\nstatus_code => " .. resp.status_code)
-    end
-
-    for version in resp.body:gmatch("(%d.%d.%d.-)%s") do
-        table.insert(versions, version)
-    end
 end
 
 function fetchForWindows()
@@ -123,7 +105,7 @@ end
 function fetchForUnix()
     local result = {}
 
-    for i, v in ipairs(RubyVersions) do
+    for i, v in ipairs(Manifest.ruby) do
         if i == 1 then
             table.insert(result, {
                 version = v,
@@ -146,7 +128,7 @@ end
 
 function clearCache()
     os.remove(RUNTIME.pluginDirPath .. "/available.cache")
-    exit()
+    os.exit()
 end
 
 -- pre_install.lua
@@ -176,7 +158,7 @@ function getLatestVersion()
         end
         version = resp.body:match("Ruby (%d.%d.%d+)%-1 %(x64%)")
     else
-        version = RubyVersions[1]
+        version = Manifest.ruby[1]
     end
 
     return version
@@ -185,19 +167,19 @@ end
 function generateURL(version, osType, archType)
     local file, sha256
 
-    if hasValue(JRubyVersions, version) then
+    if hasValue(Manifest.jruby, version) then
         file, sha256 = generateJRuby(version)
     elseif osType == "windows" then
         file, sha256 = generateWindowsRuby(version, archType)
-    elseif version:match("^[1-3]%.%d%.%d%-?%w*%.m?rb$") then
-        file = generateRubyBuild()
+    elseif hasValue(Manifest["ruby-build"], version) then
+        file = fetchRubyBuild()
     elseif osType ~= "darwin" and osType ~= "linux" then
         print("Unsupported OS: " .. osType)
         os.exit(1)
-    elseif not hasValue(RubyVersions, version) then
+    elseif not hasValue(Manifest.ruby, version) then
         print("Unsupported version: " .. version)
         os.exit(1)
-    elseif hasValue(HomebrewRubyVersions, version) then
+    elseif hasValue(Manifest.homebrew, version) then
         file = generateHomebrewRuby(version, osType, archType)
     elseif compareVersion(version, "20.0.0") >= 0 then
         file = generateTruffleRuby(version, osType, archType)
@@ -234,8 +216,8 @@ function generateWindowsRuby(version, archType)
     local file, sha256
     local bit = archType == "amd64" and "64" or "86"
     local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
-    file = "rubyinstaller-%s-1-x%s.7z"
-    file = githubURL:gsub("/$", "") .. "/oneclick/rubyinstaller2/releases/download/RubyInstaller-%s-1/" .. file
+    file = githubURL:gsub("/$", "")
+        .. "/oneclick/rubyinstaller2/releases/download/RubyInstaller-%s-1/rubyinstaller-%s-1-x%s.7z"
     file = file:format(version, version, bit)
 
     local resp, err = http.get({
@@ -252,11 +234,11 @@ function generateWindowsRuby(version, archType)
     return file, sha256
 end
 
-function generateRubyBuild()
-    local file
-    local latestRubyBuild = "https://api.github.com/repos/rbenv/ruby-build/releases/latest"
+function fetchRubyBuild()
+    local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
+    local file = githubURL:gsub("/$", "") .. "/rbenv/ruby-build/tags"
     local resp, err = http.get({
-        url = latestRubyBuild,
+        url = file,
     })
     if err ~= nil then
         error("Failed to request: " .. err)
@@ -264,8 +246,8 @@ function generateRubyBuild()
     if resp.status_code ~= 200 then
         error("Failed to get latest ruby-build: " .. err .. "\nstatus_code => " .. resp.status_code)
     end
-    latestRubyBuild = json.decode(resp.body)
-    file = latestRubyBuild.tarball_url .. "#/ruby-build.tgz"
+    file = resp.body:match("(v%d+)</a>") .. ".tar.gz"
+    file = githubURL:gsub("/$", "") .. "/rbenv/ruby-build/archive/refs/tags/" .. file
 
     return file
 end
@@ -329,11 +311,11 @@ end
 
 -- post_install.lua
 function unixInstall(rootPath, path, version)
-    if hasValue(HomebrewRubyVersions, version) then
+    if hasValue(Manifest.homebrew, version) then
         patchHomebrewRuby(path, version)
-    elseif hasValue(JRubyVersions, version) then
+    elseif hasValue(Manifest.jruby, version) then
         patchJRuby(path)
-    elseif version:match("%.m?rb$") then
+    elseif hasValue(Manifest["ruby-build"], version) then
         patchRubyBuild(path, version)
     elseif compareVersion(version, "20.0.0") >= 0 then
         patchTruffleRuby(path)
