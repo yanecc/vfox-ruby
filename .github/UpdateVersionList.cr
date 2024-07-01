@@ -14,9 +14,7 @@ def fetchRubyBuildVersions
   mrubyList, rubyList = versionList.partition &.starts_with? "mruby-"
   rubyList.map! { |version| version + ".rb" }
   mrubyList.map! { |version| version.split("-").last + ".mrb" }
-  rubyList.reverse!
-  mrubyList.reverse!
-  versionList = rubyList + mrubyList
+  versionList = rubyList.reverse + mrubyList.reverse
 end
 
 def getLatestVersion(url)
@@ -82,15 +80,15 @@ if vlist["truffleruby"][0] != latestTruffleRuby
   puts "TruffleRuby has an updated version: #{latestTruffleRuby}"
 end
 
-if vlist["jruby"] != fetchJRubyVersions
+if vlist["jruby"] != (jrubyVersions = fetchJRubyVersions)
   isUpdated = false
-  vlist["jruby"] = fetchJRubyVersions
+  vlist["jruby"] = jrubyVersions
   puts "JRuby version list is updated"
 end
 
-if vlist["ruby-build"] != fetchRubyBuildVersions
+if vlist["ruby-build"] != (rbVersions = fetchRubyBuildVersions)
   isUpdated = false
-  vlist["ruby-build"] = fetchRubyBuildVersions
+  vlist["ruby-build"] = rbVersions
   puts "Ruby-build version list is updated"
 end
 

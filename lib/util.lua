@@ -172,7 +172,7 @@ function generateURL(version, osType, archType)
     elseif osType == "windows" then
         file, sha256 = generateWindowsRuby(version, archType)
     elseif hasValue(Manifest["ruby-build"], version) then
-        file = fetchRubyBuild()
+        file = generateRubyBuild()
     elseif osType ~= "darwin" and osType ~= "linux" then
         print("Unsupported OS: " .. osType)
         os.exit(1)
@@ -234,7 +234,7 @@ function generateWindowsRuby(version, archType)
     return file, sha256
 end
 
-function fetchRubyBuild()
+function generateRubyBuild()
     local githubURL = os.getenv("GITHUB_URL") or "https://github.com/"
     local file = githubURL:gsub("/$", "") .. "/rbenv/ruby-build/tags"
     local resp, err = http.get({
