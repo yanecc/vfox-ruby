@@ -82,14 +82,14 @@ end
 
 if vlist["jruby"] != (jrubyVersions = fetchJRubyVersions)
   isUpdated = false
+  puts "JRuby is updated: #{(jrubyVersions - vlist["jruby"]).join %(, )}"
   vlist["jruby"] = jrubyVersions
-  puts "JRuby version list is updated"
 end
 
 if vlist["ruby-build"] != (rbVersions = fetchRubyBuildVersions)
   isUpdated = false
+  puts "Ruby-build is updated: #{(rbVersions - vlist["ruby-build"]).join %(, )}"
   vlist["ruby-build"] = rbVersions
-  puts "Ruby-build version list is updated"
 end
 
 unless isUpdated

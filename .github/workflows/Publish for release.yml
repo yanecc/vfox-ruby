@@ -23,7 +23,8 @@ jobs:
           echo "FILE_NAME=$FILE_NAME" >> $GITHUB_OUTPUT
           echo "PLUGIN=${GITHUB_REPOSITORY##*/}" >> $GITHUB_OUTPUT
 
-      - uses: edgarrc/action-7z@v1
+      - name: Package assets
+        uses: edgarrc/action-7z@v1
         with:
           args: 7z a -tzip -mx=9 -xr!*.git* -xr!.* ${{ steps.get_name.outputs.FILE_NAME }}
 
