@@ -19,8 +19,13 @@ end
 
 def getLatestVersion(url)
   response = HTTP::Client.get url
-  latestRelease = response.headers["Location"]
-  latestVersion = latestRelease[/\d[\.\d]+/]
+  while response.status.redirection?
+    location = response.headers["Location"]
+    abort "重定向但缺少 Location 响应头" if location.nil?
+    response = HTTP::Client.get(location)
+  end
+  latestTag = JSON.parse(response.body)["tag_name"].as_s
+  latestVersion = latestTag[/\d[\.\d]+/]
 end
 
 def fetchVersionList
@@ -75,8 +80,8 @@ def compareVersions(a, b)
   0
 end
 
-latestTruffleRuby = getLatestVersion "https://github.com/oracle/truffleruby/releases/latest"
-latestHomebrewRuby = getLatestVersion "https://github.com/Homebrew/homebrew-portable-ruby/releases/latest"
+latestTruffleRuby = getLatestVersion "https://api.github.com/repos/oracle/truffleruby/releases/latest"
+latestHomebrewRuby = getLatestVersion "https://api.github.com/repos/Homebrew/homebrew-portable-ruby/releases/latest"
 vlist = fetchVersionList
 
 output = "manifest.md"
@@ -96,7 +101,7 @@ OptionParser.parse do |parser|
 end
 
 isUpdated = true
-if vlist["ruby"][0] != latestHomebrewRuby
+if vlist["homebrew"][0] != latestHomebrewRuby
   isUpdated = false
   vlist["homebrew"].unshift(latestHomebrewRuby)
   puts "Homebrew Ruby has an updated version: #{latestHomebrewRuby}"
