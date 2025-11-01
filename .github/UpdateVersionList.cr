@@ -29,10 +29,39 @@ def fetchVersionList
   versionList = Hash(String, Array(String)).from_json versionJson
 end
 
+def filterJRubyVersions(versions)
+  versions.select do |version|
+    parts = version.split(".")
+    major = parts[0].to_i
+    minor = parts[1].to_i
+    patch = parts[2].to_i
+
+    case major
+    when 9
+      case minor
+      when 1
+        patch >= 16
+      when 2
+        patch >= 20
+      when 3
+        patch >= 10
+      when 4
+        true
+      else
+        false
+      end
+    when .> 9
+      true
+    else
+      false
+    end
+  end
+end
+
 def fetchJRubyVersions
   response = HTTP::Client.get "https://www.jruby.org/files/downloads/index.html"
-  versionList = response.body.scan(/(9\.(1\.1[6-9]|2\.2\d|3\.1\d|[4-9]\.\d+)\.\d)<\/a>/).map { |m| m[1] }
-  versionList.reverse
+  versionList = response.body.scan(/(\d+\.\d+\.\d+\.\d)<\/a>/).map { |m| m[1] }
+  filterJRubyVersions(versionList).reverse
 end
 
 def compareVersions(a, b)
